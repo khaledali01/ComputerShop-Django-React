@@ -1,8 +1,8 @@
-from distutils.log import debug
 from pathlib import Path
 from datetime import timedelta
 import environ
 import os
+
 
 env = environ.Env(
     # set casting, default value
@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-f&wz*o0!x(=tfaq@6nqs2!omtqr58&gqdi_w)$+v9w#pe)+rtb
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "ecommerce-backend-api-server.herokuapp.com"]
 
 
 # Application definition
@@ -39,10 +39,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # third_party
     "rest_framework",
+    "django_filters",
     "corsheaders",
     "rest_framework_simplejwt",
-    "django_filters",
-    # "drf_yasg",
     # local
     "core.apps.CoreConfig",
     "shop.apps.ShopConfig",
@@ -61,8 +60,13 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=90),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": False,
+    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
 }
 
 
@@ -107,7 +111,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -136,14 +139,19 @@ USE_L10N = True
 
 USE_TZ = True
 
+WHITENOISE_USE_FINDERS = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "backend/staticfiles"
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [
+    BASE_DIR / "backend/static/",
+]
 MEDIA_URL = "/media/"
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_ROOT = BASE_DIR / "backend/media"
+
+
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-# STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 
 # Default primary key field type
@@ -158,7 +166,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+# Heroku: Update database configuration from $DATABASE_URL.
+import dj_database_url
 
-import django_heroku
-
-django_heroku.settings(locals())
+db_from_env = dj_database_url.config(conn_max_age=500)
+DATABASES["default"].update(db_from_env)
